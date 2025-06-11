@@ -10,6 +10,12 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('ranking'); 
   const amountInputRef = useRef<HTMLInputElement>(null);
 
+  const bannedWords = ['fuck', 'shit', 'bitch', 'nigger', 'sex', 'porn', 'hitler', 'kkk'];
+
+  const containsBannedWord = (text: string) => {
+    return bannedWords.some((word) => text.toLowerCase().includes(word));
+  };
+
   const sampleMessages = [
     'Just testing...', 'WAGMI 🚀', 'Follow my art @artist_name', 'Happy Birthday, Sarah!', 'I was told there would be cake.',
     'Is this thing on?', 'Hello from Gwangju!', 'Buy high, sell low.', 'My first ping!', 'Just graduated! 🎉',
@@ -26,11 +32,17 @@ export default function Home() {
 
   const handlePing = () => {
     const lemonSqueezyLink = 'https://YOUR_STORE.lemonsqueezy.com/buy/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'; // 👈 본인의 링크로 교체!
-    
+
     if (typeof amount !== 'number' || amount < 1) {
       alert('Minimum amount is $1.');
       return;
     }
+
+    if (containsBannedWord(name) || containsBannedWord(message)) {
+      alert('Your message contains inappropriate words.');
+      return;
+    }
+
     const amountInCents = amount * 100;
     const checkoutUrl = `${lemonSqueezyLink}?checkout[custom_price]=${amountInCents}`;
     window.location.href = checkoutUrl;
@@ -60,7 +72,6 @@ export default function Home() {
 
         <div className="w-full">
             {activeTab === 'ranking' && (
-              // --- ▼▼▼ 누락되었던 랭킹 UI 전체 복구 ▼▼▼ ---
               <section id="ranking-section">
                 <div className="w-full p-4 rounded-xl shadow-lg bg-white border-2 border-indigo-500 mb-4">
                   <div className="flex justify-between items-baseline">
@@ -82,90 +93,85 @@ export default function Home() {
                   ))}
                 </div>
               </section>
-              // --- ▲▲▲ 랭킹 UI 복구 완료 ▲▲▲ ---
             )}
 
             {activeTab === 'ping' && (
               <section id="ping-section" className="w-full space-y-4 pt-4">
-
-        {/* --- ▼▼▼ 닉네임 입력창 + 글자 수 카운터 ▼▼▼ --- */}
-        <div>
-            <input
-                className="w-full px-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                placeholder="Nickname"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={20} // 닉네임 글자 수 제한
-            />
-            <p className="text-right text-xs text-slate-500 mt-1 pr-1">
-                {name.length} / 20
-            </p>
-        </div>
-        {/* --- ▲▲▲ 닉네임 입력창 + 글자 수 카운터 ▲▲▲ --- */}
-
-        {/* --- ▼▼▼ 메시지 입력창 + 글자 수 카운터 ▼▼▼ --- */}
-        <div>
-            <textarea
-                className="w-full px-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                placeholder="Your Message"
-                rows={2}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                maxLength={50} // 메시지 글자 수 제한
-            />
-            <p className="text-right text-xs text-slate-500 mt-1 pr-1">
-                {message.length} / 50
-            </p>
-        </div>
-        {/* --- ▲▲▲ 메시지 입력창 + 글자 수 카운터 ▲▲▲ --- */}
-        
-
-        {/* 금액 입력 UI (이전과 동일) */}
-        <div className="space-y-3 pt-2">
-            <div className="relative rounded-md shadow-sm">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <span className="text-gray-500 sm:text-sm">$</span>
+                <div>
+                    <input
+                        className="w-full px-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                        placeholder="Nickname"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        maxLength={20}
+                    />
+                    <p className="text-right text-xs text-slate-500 mt-1 pr-1">
+                        {name.length} / 20
+                    </p>
                 </div>
-                <input
-                    ref={amountInputRef}
-                    type="number"
-                    id="amount"
-                    className="w-full pl-7 pr-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                    placeholder="Amount (min. $1)"
-                    value={amount}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        setAmount(value === '' ? '' : Number(value));
-                    }}
-                    min="1"
-                />
-            </div>
-            <div className="flex justify-between gap-2">
-                {[1, 10, 25, 50].map((presetAmount) => (
-                    <button
-                        key={presetAmount}
-                        onClick={() => setAmount(presetAmount)}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors w-full ${ amount === presetAmount ? 'bg-indigo-600 text-white shadow' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
-                    >
-                        ${presetAmount}
-                    </button>
-                ))}
-                <button
-                    onClick={() => {
-                        amountInputRef.current?.focus();
-                    }}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors w-full ${ amount !== '' && ![1, 10, 25, 50].includes(amount) ? 'bg-indigo-600 text-white shadow' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+
+                <div>
+                    <textarea
+                        className="w-full px-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                        placeholder="Your Message"
+                        rows={2}
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        maxLength={50}
+                    />
+                    <p className="text-right text-xs text-slate-500 mt-1 pr-1">
+                        {message.length} / 50
+                    </p>
+                </div>
+                
+                <div className="space-y-3 pt-2">
+                    <div className="relative rounded-md shadow-sm">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span className="text-gray-500 sm:text-sm">$</span>
+                        </div>
+                        <input
+                            ref={amountInputRef}
+                            type="number"
+                            id="amount"
+                            type="text"
+                            inputMode="numeric" // 모바일에서 숫자 키패드를 띄웁니다.
+                            pattern="[0-9]*"   // 일부 브라우저에서 추가적으로 숫자만 유효하다고 알려줍니다.
+                            className="w-full pl-7 pr-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                            placeholder="Amount (min. $1)"
+                            value={amount}
+                            onChange={(e) => {
+                              const sanitizedValue = e.target.value.replace(/[^0-9]/g, '');
+                              setAmount(sanitizedValue === '' ? '' : Number(sanitizedValue));
+                            }}
+                            min="1"
+                        />
+                    </div>
+                    <div className="flex justify-between gap-2">
+                        {presetAmounts.map((presetAmount) => (
+                            <button
+                                key={presetAmount}
+                                onClick={() => setAmount(presetAmount)}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors w-full ${ amount === presetAmount ? 'bg-indigo-600 text-white shadow' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                            >
+                                ${presetAmount}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => {
+                                amountInputRef.current?.focus();
+                            }}
+                            className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors w-full ${ amount !== '' && !presetAmounts.includes(amount) ? 'bg-indigo-600 text-white shadow' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                        >
+                            Custom
+                        </button>
+                    </div>
+                </div>
+                
+                <button 
+                    onClick={handlePing}
+                    className="w-full py-3 bg-indigo-600 text-white text-lg font-bold rounded-lg shadow-md transform transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5"
                 >
-                    Custom
-                </button>
-            </div>
-        </div>
-        
-        <button 
-            onClick={handlePing}
-            className="w-full py-3 bg-indigo-600 text-white text-lg font-bold rounded-lg shadow-md transform transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5"
-        >
-        Ping!
+                Ping!
                 </button>
               </section>
             )}
