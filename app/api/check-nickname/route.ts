@@ -16,21 +16,21 @@ export async function GET(request: NextRequest) {
       .from('messages')
       .select('total_amount')
       .eq('nickname', nickname)
-      .single(); // .single()은 결과가 하나이거나 없어야 함을 의미
+      .single();
 
     if (error && error.code !== 'PGRST116') {
-      // PGRST116은 결과가 없다는 에러코드이므로, 이건 정상적인 상황입니다.
+      // PGRST116은 '결과 행이 없음'을 의미하는 정상적인 오류 코드입니다.
       throw error;
     }
 
     if (data) {
-      // 닉네임이 존재할 경우
       return NextResponse.json({ exists: true, totalAmount: data.total_amount });
     } else {
-      // 닉네임이 존재하지 않을 경우
       return NextResponse.json({ exists: false });
     }
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) { // [수정] any 대신 unknown 타입을 사용합니다.
+    const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+    console.error('Check-nickname Error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
