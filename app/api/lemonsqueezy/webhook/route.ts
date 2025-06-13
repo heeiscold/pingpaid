@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
   try {
     const payload = JSON.parse(text);
     if (payload.meta.event_name === 'order_created') {
-      const orderData = payload.data.attributes;
-      const customData = orderData.custom_data || {};
+      const orderData = payload?.data?.attributes;
+      const customData = payload?.meta?.custom_data || {};
       
       const nickname = customData.nickname;
       const message = customData.message || '';
