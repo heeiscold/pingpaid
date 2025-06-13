@@ -4,13 +4,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
+// 랭킹 데이터의 타입을 명확하게 정의합니다.
+type Ranking = {
+  id: string;
+  created_at: string;
+  nickname: string;
+  latest_message: string;
+  total_amount: number;
+  updated_at: string;
+};
+
 export default function Home() {
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
   const [amount, setAmount] = useState<number | ''>(''); 
   const [activeTab, setActiveTab] = useState('ranking'); 
   const amountInputRef = useRef<HTMLInputElement>(null);
-  const [rankings, setRankings] = useState<any[]>([]);
+  const [rankings, setRankings] = useState<Ranking[]>([]);
 
   const bannedWords = ['fuck', 'shit', 'bitch', 'nigger', 'sex', 'porn', 'hitler', 'kkk'];
 
@@ -28,7 +38,7 @@ export default function Home() {
     if (error) {
       console.error('Error fetching rankings:', error);
     } else {
-      setRankings(data);
+      setRankings(data as Ranking[]);
     }
   }
 
@@ -39,7 +49,6 @@ export default function Home() {
   }, [activeTab]);
 
   const handlePing = async () => {
-    // 닉네임, 금액, 금지어 등 유효성 검사는 그대로 둡니다.
     if (!name.trim()) {
       alert('Nickname is required.');
       return;
@@ -53,17 +62,25 @@ export default function Home() {
       return;
     }
 
-    const lemonSqueezyLink = 'https://YOUR_STORE.lemonsqueezy.com/buy/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'; // 👈 본인의 링크로 교체!
-    const amountInCents = amount * 100;
+    const { error } = await supabase.rpc('handle_ping', {
+      p_nickname: name,
+      p_message: message,
+      p_amount: amount
+    });
 
-    // [수정사항] Supabase 함수 호출(rpc) 부분을 삭제합니다.
-    // 대신, 나중에 웹훅에서 사용할 닉네임과 메시지를 checkout[custom] 파라미터에 담아 보냅니다.
+    if (error) {
+      console.error('Error handling ping:', error);
+      alert('An error occurred. Please try again.');
+      return;
+    }
+
+    const lemonSqueezyLink = 'https://YOUR_STORE.lemonsqueezy.com/buy/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+    const amountInCents = amount * 100;
     const checkoutUrl = `${lemonSqueezyLink}` +
       `?checkout[custom_price]=${amountInCents}` +
       `&checkout[custom][nickname]=${encodeURIComponent(name)}` +
       `&checkout[custom][message]=${encodeURIComponent(message)}`;
 
-    // 생성된 URL로 사용자를 이동시키기만 합니다.
     window.location.href = checkoutUrl;
   };
 
@@ -99,9 +116,8 @@ export default function Home() {
                         <span className="text-2xl font-bold text-indigo-600">#1 {rankings[0].nickname}</span>
                         <span className="text-xl font-bold text-slate-800">${rankings[0].total_amount}</span>
                       </div>
-                      <p className="text-md text-slate-700 mt-2 italic">"{rankings[0].latest_message}"</p>
+                      <p className="text-md text-slate-700 mt-2 italic">{`"${rankings[0].latest_message}"`}</p>
                     </div>
-                    
                     <div className="w-full max-h-[450px] overflow-y-auto space-y-3 p-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
                       {rankings.slice(1).map((item, index) => (
                         <div key={item.id} className="w-full p-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-indigo-400 transition-colors">
@@ -109,7 +125,7 @@ export default function Home() {
                             <p className="font-bold text-indigo-600">#{index + 2} <span className="text-slate-800 font-semibold">{item.nickname}</span></p>
                             <p className="font-semibold">${item.total_amount}</p>
                           </div>
-                          <p className="text-sm text-slate-600 mt-1 italic truncate">"{item.latest_message}"</p>
+                          <p className="text-sm text-slate-600 mt-1 italic truncate">{`"${item.latest_message}"`}</p>
                         </div>
                       ))}
                     </div>

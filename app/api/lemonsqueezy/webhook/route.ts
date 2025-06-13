@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
         throw new Error('Nickname not found in custom data.');
       }
 
-      // 이제 여기서 Supabase DB 함수를 호출하여 데이터를 저장/업데이트합니다.
       const { error } = await supabase.rpc('handle_ping', {
         p_nickname: nickname,
         p_message: message,
@@ -49,8 +48,9 @@ export async function POST(request: NextRequest) {
     
     return new NextResponse('Webhook processed successfully.', { status: 200 });
 
-  } catch (error: any) {
-    console.error('Webhook Error:', error.message);
-    return new NextResponse(`Webhook Error: ${error.message}`, { status: 500 });
+  } catch (error: unknown) { // [수정] any 대신 unknown 타입을 사용합니다.
+    const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+    console.error('Webhook Error:', message);
+    return new NextResponse(`Webhook Error: ${message}`, { status: 500 });
   }
 }
