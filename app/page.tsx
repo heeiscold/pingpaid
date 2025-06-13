@@ -115,9 +115,7 @@ export default function Home() {
   const separator = hasQuery ? '&' : '?';
 
   // 최종 URL을 조합합니다.
-  const finalUrl = `${baseUrl}` +
-                 `${separator}checkout[custom][nickname]=${encodeURIComponent(name)}` +
-                 `&checkout[custom][message]=${encodeURIComponent(message)}`;
+  const finalUrl = `${baseUrl}` + `${separator}checkout[custom][nickname]=${encodeURIComponent(name)}` + `&checkout[custom][message]=${encodeURIComponent(message)}`;
 
   // 최종 생성된 URL로 사용자를 이동시킵니다.
   window.location.href = finalUrl;
@@ -153,7 +151,9 @@ export default function Home() {
                     <div className="w-full p-4 rounded-xl shadow-lg bg-white border-2 border-indigo-500 mb-4">
                       <div className="flex justify-between items-baseline">
                         <span className="text-2xl font-bold text-indigo-600">#1 {rankings[0].nickname}</span>
-                        <span className="text-xl font-bold text-slate-800">${rankings[0].total_amount}</span>
+                        <span className="text-xl font-bold text-slate-800">
+                          ${(rankings[0].total_amount / 100).toFixed(2)}
+                        </span>
                       </div>
                       <p className="text-md text-slate-700 mt-2 italic">{`"${rankings[0].message}"`}</p>
                     </div>
@@ -162,7 +162,9 @@ export default function Home() {
                         <div key={item.id} className="w-full p-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-indigo-400 transition-colors">
                           <div className="flex justify-between items-baseline text-slate-500">
                             <p className="font-bold text-indigo-600">#{index + 2} <span className="text-slate-800 font-semibold">{item.nickname}</span></p>
-                            <p className="font-semibold">${item.total_amount}</p>
+                            <p className="font-semibold">
+                              ${(item.total_amount / 100).toFixed(2)}
+                            </p>
                           </div>
                           <p className="text-sm text-slate-600 mt-1 italic truncate">{`"${item.message}"`}</p>
                         </div>
