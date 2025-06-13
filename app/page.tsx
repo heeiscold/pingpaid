@@ -81,7 +81,7 @@ export default function Home() {
   const linkFor10 = 'https://pingpaid.lemonsqueezy.com/buy/33b45576-c34a-4a0e-adca-d610d1f972ce';
   const linkFor25 = 'https://pingpaid.lemonsqueezy.com/buy/bdfc1c1f-b0bd-4b2b-a858-58d00621ee46';
   const linkFor50 = 'https://pingpaid.lemonsqueezy.com/buy/9f40fef4-3fd4-4e24-b2fd-435a37481abb';
-  const linkForCustom = 'https://pingpaid.lemonsqueezy.com/buy/396403bf-11ed-449a-a20c-bad5dd56df1e';
+  const linkForCustom = 'https://pingpaid.lemonsqueezy.com/buy/374437e1-662e-493a-a6c6-80b3a88bda09';
 
   // 유효성 검사도 그대로 둡니다.
   if (!name.trim()) { /* ... */ }
