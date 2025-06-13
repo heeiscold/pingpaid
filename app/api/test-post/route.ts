@@ -1,0 +1,10 @@
+// app/api/test-post/route.ts
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  return NextResponse.json({ message: "Hello from GET!" });
+}
+
+export async function POST() {
+  return NextResponse.json({ message: "Hello from POST!" });
+}
