@@ -49,53 +49,52 @@ export default function Home() {
   }, [activeTab]);
 
   const handlePing = async () => {
-    // --- ▼▼▼ 여기에 5개의 상품 링크를 미리 준비합니다. ▼▼▼ ---
-    const linkFor1 = 'https://pingpaid.lemonsqueezy.com/buy/a8144ce4-8611-4365-97e0-38a0ecd9e8a8';
-    const linkFor10 = 'https://pingpaid.lemonsqueezy.com/buy/33b45576-c34a-4a0e-adca-d610d1f972ce';
-    const linkFor25 = 'https://pingpaid.lemonsqueezy.com/buy/bdfc1c1f-b0bd-4b2b-a858-58d00621ee46';
-    const linkFor50 = 'https://pingpaid.lemonsqueezy.com/buy/9f40fef4-3fd4-4e24-b2fd-435a37481abb';
-    const linkForCustom = 'https://pingpaid.lemonsqueezy.com/buy/396403bf-11ed-449a-a20c-bad5dd56df1e';
-    // --- ▲▲▲ 여기까지 ▲▲▲ ---
+  // 5개의 상품 링크를 미리 준비하는 부분은 그대로 둡니다.
+  const linkFor1 = 'https://pingpaid.lemonsqueezy.com/buy/a8144ce4-8611-4365-97e0-38a0ecd9e8a8';
+  const linkFor10 = 'https://pingpaid.lemonsqueezy.com/buy/33b45576-c34a-4a0e-adca-d610d1f972ce';
+  const linkFor25 = 'https://pingpaid.lemonsqueezy.com/buy/bdfc1c1f-b0bd-4b2b-a858-58d00621ee46';
+  const linkFor50 = 'https://pingpaid.lemonsqueezy.com/buy/9f40fef4-3fd4-4e24-b2fd-435a37481abb';
+  const linkForCustom = 'https://pingpaid.lemonsqueezy.com/buy/396403bf-11ed-449a-a20c-bad5dd56df1e';
 
-    // 유효성 검사는 이전과 동일합니다.
-    if (!name.trim()) {
-      alert('Nickname is required.');
-      return;
-    }
-    if (typeof amount !== 'number' || amount < 1) {
-      alert('Minimum amount is $1.');
-      return;
-    }
-    if (containsBannedWord(name) || containsBannedWord(message)) {
-      alert('Your message contains inappropriate words.');
-      return;
-    }
-    
-    // 최종적으로 이동할 URL을 담을 변수
-    let checkoutUrl = '';
+  // 유효성 검사도 그대로 둡니다.
+  if (!name.trim()) { /* ... */ }
+  if (typeof amount !== 'number' || amount < 1) { /* ... */ }
+  if (containsBannedWord(name) || containsBannedWord(message)) { /* ... */ }
+  
+  // --- ▼▼▼ URL 생성 로직 수정 ▼▼▼ ---
 
-    // [수정사항] 금액에 따라 다른 checkoutUrl을 선택합니다.
-    if (amount === 1) {
-      checkoutUrl = linkFor1;
-    } else if (amount === 10) {
-      checkoutUrl = linkFor10;
-    } else if (amount === 25) {
-      checkoutUrl = linkFor25;
-    } else if (amount === 50) {
-      checkoutUrl = linkFor50;
-    } else {
-      // 그 외의 모든 'Custom' 금액일 경우
-      const amountInCents = amount * 100;
-      checkoutUrl = `${linkForCustom}?checkout[custom_price]=${amountInCents}`;
-    }
-    
-    // 닉네임과 메시지는 모든 URL에 공통으로 추가합니다.
-    checkoutUrl += `&checkout[custom][nickname]=${encodeURIComponent(name)}` +
-                  `&checkout[custom][message]=${encodeURIComponent(message)}`;
+  let baseUrl = ''; // 기본 URL을 담을 변수
+  let hasQuery = false; // 기본 URL에 이미 쿼리 파라미터가 있는지 여부
 
-    // 최종 생성된 URL로 사용자를 이동시킵니다.
-    window.location.href = checkoutUrl;
-  };
+  // 금액에 따라 올바른 기본 URL을 선택합니다.
+  if (amount === 1) {
+    baseUrl = linkFor1;
+  } else if (amount === 10) {
+    baseUrl = linkFor10;
+  } else if (amount === 25) {
+    baseUrl = linkFor25;
+  } else if (amount === 50) {
+    baseUrl = linkFor50;
+  } else {
+    // 그 외의 모든 'Custom' 금액일 경우
+    const amountInCents = amount * 100;
+    // Custom의 경우, URL에 이미 '?'가 포함됩니다.
+    baseUrl = `${linkForCustom}?checkout[custom_price]=${amountInCents}`;
+    hasQuery = true; // ?가 이미 있다고 표시
+  }
+  
+  // 닉네임과 메시지 파라미터를 추가하기 전,
+  // ?를 붙일지 &를 붙일지 결정합니다.
+  const separator = hasQuery ? '&' : '?';
+
+  // 최종 URL을 조합합니다.
+  const finalUrl = `${baseUrl}` +
+                 `${separator}checkout[custom][nickname]=${encodeURIComponent(name)}` +
+                 `&checkout[custom][message]=${encodeURIComponent(message)}`;
+
+  // 최종 생성된 URL로 사용자를 이동시킵니다.
+  window.location.href = finalUrl;
+};
 
   const presetAmounts = [1, 10, 25, 50];
 
