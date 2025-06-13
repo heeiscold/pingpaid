@@ -28,17 +28,20 @@ export async function POST(request: NextRequest) {
       const customData = orderData.custom_data || {};
       
       const nickname = customData.nickname;
-      const message = customData.message;
-      const amount = orderData.total / 100;
+      const message = customData.message || '';
+      
+      // [수정 1] 달러로 변환하지 않고, Lemon Squeezy가 보내준 센트 값을 그대로 사용합니다.
+      const amountInCents = orderData.total; 
 
       if (!nickname) {
         throw new Error('Nickname not found in custom data.');
       }
 
+      // [수정 2] p_amount에 센트 단위의 정수 값을 전달합니다.
       const { error } = await supabase.rpc('handle_ping', {
         p_nickname: nickname,
         p_message: message,
-        p_amount: amount,
+        p_amount: amountInCents,
       });
 
       if (error) {
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
     
     return new NextResponse('Webhook processed successfully.', { status: 200 });
 
-  } catch (error: unknown) { // [수정] any 대신 unknown 타입을 사용합니다.
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred.';
     console.error('Webhook Error:', message);
     return new NextResponse(`Webhook Error: ${message}`, { status: 500 });
