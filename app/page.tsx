@@ -49,6 +49,15 @@ export default function Home() {
   }, [activeTab]);
 
   const handlePing = async () => {
+    // --- ▼▼▼ 여기에 5개의 상품 링크를 미리 준비합니다. ▼▼▼ ---
+    const linkFor1 = 'https://pingpaid.lemonsqueezy.com/buy/a8144ce4-8611-4365-97e0-38a0ecd9e8a8';
+    const linkFor10 = 'https://pingpaid.lemonsqueezy.com/buy/33b45576-c34a-4a0e-adca-d610d1f972ce';
+    const linkFor25 = 'https://pingpaid.lemonsqueezy.com/buy/bdfc1c1f-b0bd-4b2b-a858-58d00621ee46';
+    const linkFor50 = 'https://pingpaid.lemonsqueezy.com/buy/9f40fef4-3fd4-4e24-b2fd-435a37481abb';
+    const linkForCustom = 'https://pingpaid.lemonsqueezy.com/buy/396403bf-11ed-449a-a20c-bad5dd56df1e';
+    // --- ▲▲▲ 여기까지 ▲▲▲ ---
+
+    // 유효성 검사는 이전과 동일합니다.
     if (!name.trim()) {
       alert('Nickname is required.');
       return;
@@ -61,26 +70,30 @@ export default function Home() {
       alert('Your message contains inappropriate words.');
       return;
     }
+    
+    // 최종적으로 이동할 URL을 담을 변수
+    let checkoutUrl = '';
 
-    const { error } = await supabase.rpc('handle_ping', {
-      p_nickname: name,
-      p_message: message,
-      p_amount: amount
-    });
-
-    if (error) {
-      console.error('Error handling ping:', error);
-      alert('An error occurred. Please try again.');
-      return;
+    // [수정사항] 금액에 따라 다른 checkoutUrl을 선택합니다.
+    if (amount === 1) {
+      checkoutUrl = linkFor1;
+    } else if (amount === 10) {
+      checkoutUrl = linkFor10;
+    } else if (amount === 25) {
+      checkoutUrl = linkFor25;
+    } else if (amount === 50) {
+      checkoutUrl = linkFor50;
+    } else {
+      // 그 외의 모든 'Custom' 금액일 경우
+      const amountInCents = amount * 100;
+      checkoutUrl = `${linkForCustom}?checkout[custom_price]=${amountInCents}`;
     }
+    
+    // 닉네임과 메시지는 모든 URL에 공통으로 추가합니다.
+    checkoutUrl += `&checkout[custom][nickname]=${encodeURIComponent(name)}` +
+                  `&checkout[custom][message]=${encodeURIComponent(message)}`;
 
-    const lemonSqueezyLink = 'https://YOUR_STORE.lemonsqueezy.com/buy/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
-    const amountInCents = amount * 100;
-    const checkoutUrl = `${lemonSqueezyLink}` +
-      `?checkout[custom_price]=${amountInCents}` +
-      `&checkout[custom][nickname]=${encodeURIComponent(name)}` +
-      `&checkout[custom][message]=${encodeURIComponent(message)}`;
-
+    // 최종 생성된 URL로 사용자를 이동시킵니다.
     window.location.href = checkoutUrl;
   };
 
