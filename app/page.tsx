@@ -77,7 +77,7 @@ export default function Home() {
     baseUrl = linkFor50;
   } else {
     // 그 외의 모든 'Custom' 금액일 경우
-    const amountInCents = amount * 100;
+    const amountInCents = Number(amount) * 100;
     // Custom의 경우, URL에 이미 '?'가 포함됩니다.
     baseUrl = `${linkForCustom}?checkout[custom_price]=${amountInCents}`;
     hasQuery = true; // ?가 이미 있다고 표시
