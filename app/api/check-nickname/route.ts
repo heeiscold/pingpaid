@@ -12,23 +12,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // [수정] message 컬럼도 함께 가져옵니다.
     const { data, error } = await supabase
       .from('messages')
-      .select('total_amount')
+      .select('total_amount, message') // 'message' 추가
       .eq('nickname', nickname)
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      // PGRST116은 '결과 행이 없음'을 의미하는 정상적인 오류 코드입니다.
       throw error;
     }
 
     if (data) {
-      return NextResponse.json({ exists: true, totalAmount: data.total_amount });
+      // [수정] 결과에 message를 포함하여 반환합니다.
+      return NextResponse.json({ exists: true, totalAmount: data.total_amount, message: data.message });
     } else {
       return NextResponse.json({ exists: false });
     }
-  } catch (error: unknown) { // [수정] any 대신 unknown 타입을 사용합니다.
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred.';
     console.error('Check-nickname Error:', message);
     return NextResponse.json({ error: message }, { status: 500 });

@@ -9,7 +9,7 @@ type Ranking = {
   id: string;
   created_at: string;
   nickname: string;
-  latest_message: string;
+  message: string;
   total_amount: number;
   updated_at: string;
 };
@@ -22,6 +22,7 @@ export default function Home() {
   const amountInputRef = useRef<HTMLInputElement>(null);
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [nicknameStatus, setNicknameStatus] = useState({ status: 'idle', message: '' });
+  const [originalMessage, setOriginalMessage] = useState<string | null>(null);
 
   const bannedWords = ['fuck', 'shit', 'bitch', 'nigger', 'sex', 'porn', 'hitler', 'kkk'];
 
@@ -50,31 +51,29 @@ export default function Home() {
   }, [activeTab]);
 
   useEffect(() => {
-    // 닉네임이 비어있으면 아무것도 하지 않습니다.
     if (!name.trim()) {
       setNicknameStatus({ status: 'idle', message: '' });
+      setOriginalMessage(null);
       return;
     }
 
-    // 타이핑을 멈추면 0.5초 후에 닉네임 확인을 시작합니다. (디바운싱)
     const handler = setTimeout(() => {
       setNicknameStatus({ status: 'checking', message: 'Checking...' });
       fetch(`/api/check-nickname?name=${encodeURIComponent(name)}`)
         .then(res => res.json())
         .then(data => {
           if (data.exists) {
-            setNicknameStatus({ status: 'taken', message: `💡 $${data.totalAmount} to this nickname. Your payment will be added.` });
+            setNicknameStatus({ status: 'taken', message: `💡 $${data.totalAmount} to this message. Your payment will be added.` });
+            setOriginalMessage(data.message); // [수정] 기존 메시지를 state에 저장
           } else {
-            setNicknameStatus({ status: 'available', message: '✅ This is a new nickname!' });
+            setNicknameStatus({ status: 'available', message: '✅ This is a new message! You will be the original creator.' });
+            setOriginalMessage(null); // 새 닉네임이므로 기존 메시지는 없음
           }
         });
     }, 500);
 
-    // 사용자가 계속 타이핑하면 이전 타이머를 취소하여 불필요한 API 요청을 막습니다.
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [name]); // name state가 바뀔 때마다 이 로직이 실행됩니다.
+    return () => clearTimeout(handler);
+  }, [name]);
 
   const handlePing = async () => {
   // 5개의 상품 링크를 미리 준비하는 부분은 그대로 둡니다.
@@ -156,7 +155,7 @@ export default function Home() {
                         <span className="text-2xl font-bold text-indigo-600">#1 {rankings[0].nickname}</span>
                         <span className="text-xl font-bold text-slate-800">${rankings[0].total_amount}</span>
                       </div>
-                      <p className="text-md text-slate-700 mt-2 italic">{`"${rankings[0].latest_message}"`}</p>
+                      <p className="text-md text-slate-700 mt-2 italic">{`"${rankings[0].message}"`}</p>
                     </div>
                     <div className="w-full max-h-[450px] overflow-y-auto space-y-3 p-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
                       {rankings.slice(1).map((item, index) => (
@@ -165,7 +164,7 @@ export default function Home() {
                             <p className="font-bold text-indigo-600">#{index + 2} <span className="text-slate-800 font-semibold">{item.nickname}</span></p>
                             <p className="font-semibold">${item.total_amount}</p>
                           </div>
-                          <p className="text-sm text-slate-600 mt-1 italic truncate">{`"${item.latest_message}"`}</p>
+                          <p className="text-sm text-slate-600 mt-1 italic truncate">{`"${item.message}"`}</p>
                         </div>
                       ))}
                     </div>
@@ -181,30 +180,28 @@ export default function Home() {
             {activeTab === 'ping' && (
               <section id="ping-section" className="w-full space-y-4 pt-4">
                 <div>
-                    <input
-                        className="w-full px-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                        placeholder="Nickname"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        maxLength={20}
-                    />
-                    <div className="text-right text-xs mt-1 pr-1 h-4"> {/* 높이를 고정하여 UI가 밀리는 현상 방지 */}
+                  <input
+                      className="w-full px-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-400"
+                      placeholder="Nickname (Permanent if new!)"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      maxLength={20}
+                  />
+                  <div className="text-right text-xs mt-1 pr-1 h-4">
                     {nicknameStatus.status === 'checking' && <p className="text-slate-400">{nicknameStatus.message}</p>}
                     {nicknameStatus.status === 'available' && <p className="text-green-600 font-semibold">{nicknameStatus.message}</p>}
                     {nicknameStatus.status === 'taken' && <p className="text-blue-600 font-semibold">{nicknameStatus.message}</p>}
-                    </div>
-                    <p className="text-right text-xs text-slate-500 mt-1 pr-1">
-                        {name.length} / 20
-                    </p>
+                  </div>
                 </div>
                 <div>
                     <textarea
-                        className="w-full px-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                        placeholder="Your Message"
-                        rows={2}
-                        value={message}
+                        className="w-full px-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-400 disabled:bg-slate-100 disabled:text-slate-500"
+                        placeholder="Your Message (Permanent if new!)"
+                        rows={3}
+                        value={originalMessage ?? message}
                         onChange={(e) => setMessage(e.target.value)}
                         maxLength={50}
+                        disabled={originalMessage !== null}
                     />
                     <p className="text-right text-xs text-slate-500 mt-1 pr-1">
                         {message.length} / 50
@@ -221,8 +218,7 @@ export default function Home() {
                             inputMode="numeric"
                             pattern="[0-9]*"
                             id="amount"
-                            className="w-full pl-7 pr-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                            placeholder="Amount (min. $1)"
+                            className="w-full pl-7 pr-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-400"
                             value={amount}
                             onChange={(e) => {
                               const sanitizedValue = e.target.value.replace(/[^0-9]/g, '');
@@ -241,9 +237,7 @@ export default function Home() {
                             </button>
                         ))}
                         <button
-                            onClick={() => {
-                                amountInputRef.current?.focus();
-                            }}
+                            onClick={() => { amountInputRef.current?.focus(); }}
                             className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors w-full ${ amount !== '' && !presetAmounts.includes(amount) ? 'bg-indigo-600 text-white shadow' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
                         >
                             Custom
