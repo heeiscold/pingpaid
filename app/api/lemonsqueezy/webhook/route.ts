@@ -7,7 +7,8 @@ import { supabase } from '@/lib/supabaseClient';
 export async function POST(request: NextRequest) {
   const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET!;
   if (!secret) {
-    return new NextResponse('Webhook secret not found in environment variables.', { status: 500 });
+    console.error('Webhook secret not found in environment variables.');
+    return new NextResponse('Webhook secret not configured.', { status: 500 });
   }
 
   const text = await request.text();
@@ -29,15 +30,15 @@ export async function POST(request: NextRequest) {
       
       const nickname = customData.nickname;
       const message = customData.message || '';
-      
-      // [수정 1] 달러로 변환하지 않고, Lemon Squeezy가 보내준 센트 값을 그대로 사용합니다.
-      const amountInCents = orderData.total; 
+      const amountInCents = orderData.total;
 
       if (!nickname) {
         throw new Error('Nickname not found in custom data.');
       }
+      if (typeof amountInCents !== 'number') {
+        throw new Error('Amount (total) is not a number.');
+      }
 
-      // [수정 2] p_amount에 센트 단위의 정수 값을 전달합니다.
       const { error } = await supabase.rpc('handle_ping', {
         p_nickname: nickname,
         p_message: message,
