@@ -21,6 +21,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('ranking'); 
   const amountInputRef = useRef<HTMLInputElement>(null);
   const [rankings, setRankings] = useState<Ranking[]>([]);
+  const [nicknameStatus, setNicknameStatus] = useState({ status: 'idle', message: '' });
 
   const bannedWords = ['fuck', 'shit', 'bitch', 'nigger', 'sex', 'porn', 'hitler', 'kkk'];
 
@@ -47,6 +48,33 @@ export default function Home() {
       getRankings();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    // 닉네임이 비어있으면 아무것도 하지 않습니다.
+    if (!name.trim()) {
+      setNicknameStatus({ status: 'idle', message: '' });
+      return;
+    }
+
+    // 타이핑을 멈추면 0.5초 후에 닉네임 확인을 시작합니다. (디바운싱)
+    const handler = setTimeout(() => {
+      setNicknameStatus({ status: 'checking', message: 'Checking...' });
+      fetch(`/api/check-nickname?name=${encodeURIComponent(name)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.exists) {
+            setNicknameStatus({ status: 'taken', message: `💡 $${data.totalAmount} to this nickname. Your payment will be added.` });
+          } else {
+            setNicknameStatus({ status: 'available', message: '✅ This is a new nickname!' });
+          }
+        });
+    }, 500);
+
+    // 사용자가 계속 타이핑하면 이전 타이머를 취소하여 불필요한 API 요청을 막습니다.
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [name]); // name state가 바뀔 때마다 이 로직이 실행됩니다.
 
   const handlePing = async () => {
   // 5개의 상품 링크를 미리 준비하는 부분은 그대로 둡니다.
@@ -160,6 +188,11 @@ export default function Home() {
                         onChange={(e) => setName(e.target.value)}
                         maxLength={20}
                     />
+                    <div className="text-right text-xs mt-1 pr-1 h-4"> {/* 높이를 고정하여 UI가 밀리는 현상 방지 */}
+                    {nicknameStatus.status === 'checking' && <p className="text-slate-400">{nicknameStatus.message}</p>}
+                    {nicknameStatus.status === 'available' && <p className="text-green-600 font-semibold">{nicknameStatus.message}</p>}
+                    {nicknameStatus.status === 'taken' && <p className="text-blue-600 font-semibold">{nicknameStatus.message}</p>}
+                    </div>
                     <p className="text-right text-xs text-slate-500 mt-1 pr-1">
                         {name.length} / 20
                     </p>
