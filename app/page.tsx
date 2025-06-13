@@ -1,7 +1,8 @@
 // app/page.tsx
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 export default function Home() {
   const [name, setName] = useState('');
@@ -9,6 +10,7 @@ export default function Home() {
   const [amount, setAmount] = useState<number | ''>(''); 
   const [activeTab, setActiveTab] = useState('ranking'); 
   const amountInputRef = useRef<HTMLInputElement>(null);
+  const [rankings, setRankings] = useState<any[]>([]);
 
   const bannedWords = ['fuck', 'shit', 'bitch', 'nigger', 'sex', 'porn', 'hitler', 'kkk'];
 
@@ -16,35 +18,52 @@ export default function Home() {
     return bannedWords.some((word) => text.toLowerCase().includes(word));
   };
 
-  const sampleMessages = [
-    'Just testing...', 'WAGMI 🚀', 'Follow my art @artist_name', 'Happy Birthday, Sarah!', 'I was told there would be cake.',
-    'Is this thing on?', 'Hello from Gwangju!', 'Buy high, sell low.', 'My first ping!', 'Just graduated! 🎉',
-  ];
+  async function getRankings() {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .order('total_amount', { ascending: false })
+      .limit(100);
 
-  const rankings = [
-    { rank: 1, name: 'Alice', amount: 120, message: 'Life is short. Ping your message!' },
-    { rank: 2, name: 'Bob', amount: 100, message: 'To the moon! 🚀' },
-    { rank: 3, name: 'Charlie', amount: 95, message: 'Hello World' },
-    ...[...Array(97)].map((_, i) => ({
-      rank: i + 4, name: `User #${i + 4}`, amount: 90 - i, message: sampleMessages[i % sampleMessages.length],
-    })),
-  ];
+    if (error) {
+      console.error('Error fetching rankings:', error);
+    } else {
+      setRankings(data);
+    }
+  }
 
-  const handlePing = () => {
-    const lemonSqueezyLink = 'https://YOUR_STORE.lemonsqueezy.com/buy/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'; // 👈 본인의 링크로 교체!
+  useEffect(() => {
+    if (activeTab === 'ranking') {
+      getRankings();
+    }
+  }, [activeTab]);
 
+  const handlePing = async () => {
+    // 닉네임, 금액, 금지어 등 유효성 검사는 그대로 둡니다.
+    if (!name.trim()) {
+      alert('Nickname is required.');
+      return;
+    }
     if (typeof amount !== 'number' || amount < 1) {
       alert('Minimum amount is $1.');
       return;
     }
-
     if (containsBannedWord(name) || containsBannedWord(message)) {
       alert('Your message contains inappropriate words.');
       return;
     }
 
+    const lemonSqueezyLink = 'https://YOUR_STORE.lemonsqueezy.com/buy/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'; // 👈 본인의 링크로 교체!
     const amountInCents = amount * 100;
-    const checkoutUrl = `${lemonSqueezyLink}?checkout[custom_price]=${amountInCents}`;
+
+    // [수정사항] Supabase 함수 호출(rpc) 부분을 삭제합니다.
+    // 대신, 나중에 웹훅에서 사용할 닉네임과 메시지를 checkout[custom] 파라미터에 담아 보냅니다.
+    const checkoutUrl = `${lemonSqueezyLink}` +
+      `?checkout[custom_price]=${amountInCents}` +
+      `&checkout[custom][nickname]=${encodeURIComponent(name)}` +
+      `&checkout[custom][message]=${encodeURIComponent(message)}`;
+
+    // 생성된 URL로 사용자를 이동시키기만 합니다.
     window.location.href = checkoutUrl;
   };
 
@@ -73,25 +92,33 @@ export default function Home() {
         <div className="w-full">
             {activeTab === 'ranking' && (
               <section id="ranking-section">
-                <div className="w-full p-4 rounded-xl shadow-lg bg-white border-2 border-indigo-500 mb-4">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-2xl font-bold text-indigo-600">#1 {rankings[0].name}</span>
-                    <span className="text-xl font-bold text-slate-800">${rankings[0].amount}</span>
-                  </div>
-                  <p className="text-md text-slate-700 mt-2 italic">"{rankings[0].message}"</p>
-                </div>
-                
-                <div className="w-full max-h-[450px] overflow-y-auto space-y-3 p-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-                  {rankings.slice(1).map((item) => (
-                    <div key={item.rank} className="w-full p-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-indigo-400 transition-colors">
-                      <div className="flex justify-between items-baseline text-slate-500">
-                        <p className="font-bold text-indigo-600">#{item.rank} <span className="text-slate-800 font-semibold">{item.name}</span></p>
-                        <p className="font-semibold">${item.amount}</p>
+                {rankings.length > 0 ? (
+                  <>
+                    <div className="w-full p-4 rounded-xl shadow-lg bg-white border-2 border-indigo-500 mb-4">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-2xl font-bold text-indigo-600">#1 {rankings[0].nickname}</span>
+                        <span className="text-xl font-bold text-slate-800">${rankings[0].total_amount}</span>
                       </div>
-                      <p className="text-sm text-slate-600 mt-1 italic truncate">"{item.message}"</p>
+                      <p className="text-md text-slate-700 mt-2 italic">"{rankings[0].latest_message}"</p>
                     </div>
-                  ))}
-                </div>
+                    
+                    <div className="w-full max-h-[450px] overflow-y-auto space-y-3 p-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+                      {rankings.slice(1).map((item, index) => (
+                        <div key={item.id} className="w-full p-3 rounded-lg bg-white border border-slate-200 shadow-sm hover:border-indigo-400 transition-colors">
+                          <div className="flex justify-between items-baseline text-slate-500">
+                            <p className="font-bold text-indigo-600">#{index + 2} <span className="text-slate-800 font-semibold">{item.nickname}</span></p>
+                            <p className="font-semibold">${item.total_amount}</p>
+                          </div>
+                          <p className="text-sm text-slate-600 mt-1 italic truncate">"{item.latest_message}"</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center text-slate-500 py-10">
+                    No rankings yet. Be the first to ping!
+                  </div>
+                )}
               </section>
             )}
 
@@ -109,7 +136,6 @@ export default function Home() {
                         {name.length} / 20
                     </p>
                 </div>
-
                 <div>
                     <textarea
                         className="w-full px-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
@@ -123,7 +149,6 @@ export default function Home() {
                         {message.length} / 50
                     </p>
                 </div>
-                
                 <div className="space-y-3 pt-2">
                     <div className="relative rounded-md shadow-sm">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -131,11 +156,10 @@ export default function Home() {
                         </div>
                         <input
                             ref={amountInputRef}
-                            type="number"
-                            id="amount"
                             type="text"
-                            inputMode="numeric" // 모바일에서 숫자 키패드를 띄웁니다.
-                            pattern="[0-9]*"   // 일부 브라우저에서 추가적으로 숫자만 유효하다고 알려줍니다.
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            id="amount"
                             className="w-full pl-7 pr-4 py-3 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-slate-400"
                             placeholder="Amount (min. $1)"
                             value={amount}
@@ -143,7 +167,6 @@ export default function Home() {
                               const sanitizedValue = e.target.value.replace(/[^0-9]/g, '');
                               setAmount(sanitizedValue === '' ? '' : Number(sanitizedValue));
                             }}
-                            min="1"
                         />
                     </div>
                     <div className="flex justify-between gap-2">
@@ -166,7 +189,9 @@ export default function Home() {
                         </button>
                     </div>
                 </div>
-                
+                <p className="text-center text-xs text-gray-500 px-4">
+                    결제 금액은 랭킹에만 반영되며, 언급된 대상에게 직접 전달되지 않습니다.
+                </p>
                 <button 
                     onClick={handlePing}
                     className="w-full py-3 bg-indigo-600 text-white text-lg font-bold rounded-lg shadow-md transform transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5"
